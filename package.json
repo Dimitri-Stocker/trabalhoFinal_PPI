@@ -1,0 +1,32 @@
+{
+  "name": "trabalhofinal_ppi",
+  "version": "1.0.0",
+  "description": "Trabalho final da matéria Programação para Internet",
+  "keywords": [
+    "NodeJS",
+    "JavaScript",
+    "Express",
+    "HTTP",
+    "Cookies",
+    "Sessão"
+  ],
+  "homepage": "https://github.com/Dimitri-Stocker/trabalhoFinal_PPI#readme",
+  "bugs": {
+    "url": "https://github.com/Dimitri-Stocker/trabalhoFinal_PPI/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dimitri-Stocker/trabalhoFinal_PPI.git"
+  },
+  "license": "ISC",
+  "author": "Dimi Stocker",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
