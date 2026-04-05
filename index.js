@@ -10,6 +10,9 @@ server.use(express.urlencoded({ extended: true }));
 //Variável global para lista de livros
 var listaLivros = [];
 
+//Variável global para lista de leitores
+var listaLeitores = [];
+
 
 //Página Principal
 server.get('/', (requisicao, resposta) => {
@@ -318,6 +321,197 @@ server.get('/cadastroLeitores', (requisicao, resposta) => {
     resposta.end();
 });
 
+//Processamento do Cadastro de Leitores
+server.post('/cadastroLeitores', (requisicao, resposta) => {
+    const nomeLeitor = requisicao.body.nomeLeitor;
+    const cpf = requisicao.body.cpf;
+    const telefone = requisicao.body.telefone;
+    const dataEmprestimo = requisicao.body.dataEmprestimo;
+    const dataDevolucao = requisicao.body.dataDevolucao;
+    const tituloLivro = requisicao.body.tituloLivro;
+
+    //impedir que campo vazio seja registrado
+    if (!nomeLeitor || !cpf || !telefone || !dataEmprestimo || !dataDevolucao || !tituloLivro) {
+        let html = `
+        <html lang="pt-br">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Cadastro de Leitores</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        </head> 
+
+        <body>
+        <div class="container mt-4">
+            <div class="card p-4 shadow-sm">
+                <h5 class="display-5 fw-normal text-center">Cadastro de Leitores</h5>
+                <form action="/cadastroLeitores" method="POST">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label for="nomeLeitor" class="form-label">Nome do Leitor: </label>
+                        <input type="text" class="form-control" id="nomeLeitor" name="nomeLeitor" value="${nomeLeitor}">`;
+                    if (!nomeLeitor) {
+                        html += `
+                            <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                    }
+                    html += `
+                    </div>
+
+                     <div class="col-md-3">
+                        <label for="cpf" class="form-label">CPF: </label>
+                        <input type="text" class="form-control" id="cpf" name="cpf" placeholder="000.000.000-00" value="${cpf}">`;
+                    if (!cpf) {
+                        html += `
+                            <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                    }
+                    html += `
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="telefone" class="form-label">Telefone: </label>
+                        <input type="text" class="form-control" id="telefone" name="telefone" placeholder="(00) 00000-0000" value="${telefone}">`;
+                    if (!telefone) {
+                        html += `
+                            <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                    }
+                    html += `
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="dataEmprestimo" class="form-label">Data de Empréstimo: </label>
+                        <input type="date" class="form-control" id="dataEmprestimo" name="dataEmprestimo" value="${dataEmprestimo}">`;
+                    if (!dataEmprestimo) {
+                        html += `
+                            <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                    }
+                    html += `
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="dataDevolucao" class="form-label">Data de Devolução: </label>
+                        <input type="date" class="form-control" id="dataDevolucao" name="dataDevolucao" value="${dataDevolucao}">`;
+                    if (!dataDevolucao) {
+                        html += `
+                            <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                    }
+                    html += `
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="tituloLivro" class="form-label">Título do Livro</label>
+                        <select class="form-select" id="tituloLivro" name="tituloLivro">`;
+                        if (!tituloLivro) {
+                            html += `
+                            <option value ="" selected> Selecione um livro </option>`;
+                        }
+
+                        else {
+                            for (let i = 0; i < listaLivros.length; i++) {
+                            const livro = listaLivros[i];
+                            html += `
+                                <option value="${livro.tituloLivro}" selected>${livro.tituloLivro}</option>
+                            }`;
+                            }
+                        }
+
+                        html += `
+                        </select>`;
+
+                        if (!tituloLivro) {
+                            html += `
+                                <div class="text-danger mt-1">Campo obrigatório!</div>`;
+                        }
+
+                        html += `
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success fw-bold w-100 p-2 mt-3 mb-2">Cadastrar</button>
+                <a href="/" class="btn btn-primary w-100 p-2">Página Inicial</a>
+
+                </form>
+            </div>
+        </div>
+          <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+        </body>
+        </html>`;
+
+        resposta.write(html);
+        resposta.end();    
+    }
+
+    else {
+        listaLeitores.push(
+            {
+                "nomeLeitor": nomeLeitor,
+                "cpf": cpf,
+                "telefone": telefone,
+                "dataEmprestimo": dataEmprestimo,
+                "dataDevolucao": dataDevolucao,
+                "tituloLivro": tituloLivro
+            }
+        );
+
+        resposta.redirect('listaLeitores');
+    }
+});
+
+//Página da Lista de Leitores
+server.get('/listaLeitores', (requisicao, resposta) => {
+    resposta.write(`
+       <html lang="pt-br">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Leitores Cadastrados</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        </head> 
+
+        <body>
+        <div class="container">
+              <h5 class="display-5 fw-normal text-center">Leitores Cadastrados </h5>
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th scope="col">Nome do Leitor</th>
+                                <th scope="col">CPF</th>
+                                <th scope="col">Telefone</th>
+                                <th scope="col">Data de Empréstimo</th>
+                                <th scope="col">Data de Devolução</th>
+                                <th scope="col">Título do Livro</th>
+                            </tr>
+                        </thead>
+                        <tbody>`);
+
+        for (let i = 0; i < listaLeitores.length; i++) {
+            const leitor = listaLeitores[i];
+            resposta.write(`
+            <tr>
+                <td>${leitor.nomeLeitor}</td>
+                <td>${leitor.cpf}</td>
+                <td>${leitor.telefone}</td>
+                <td>${leitor.dataEmprestimo}</td>
+                <td>${leitor.dataDevolucao}</td>
+                <td>${leitor.tituloLivro}</td>
+            </tr>
+            `);
+        }
+
+        resposta.write(`
+            
+            
+                        </tbody>
+                    </table>
+                     <a href="/cadastroLeitores" class="btn btn-success fw-bold w-100 p-2 mb-2"> Continuar Cadastrando </a>
+                    <a href="/" class="btn btn-primary fw-bold w-100 p-2"> Página Inicial </a>
+        </div>
+         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+        </body>
+        </html>`);
+
+    resposta.end();
+});
 
 //Página de Login
 server.get('/login', (requisicao, resposta) => {
