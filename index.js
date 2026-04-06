@@ -30,7 +30,6 @@ var listaLivros = [];
 //Variável global para lista de leitores
 var listaLeitores = [];
 
-
 //Página Principal
 server.get('/', estaAutenticado, (requisicao, resposta) => {
 
