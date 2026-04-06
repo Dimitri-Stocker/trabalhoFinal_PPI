@@ -1,11 +1,28 @@
 import express from 'express';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
 
 //Cria servidor
 const server = express();
 
+//Sessão
+server.use(session({
+    secret: "Ch4v3S3cr3t4",
+    resave: true,
+    saveUninitialized: true,
+    cookie : {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 30      //Login válido por 30 minutos
+    }
+}));
+
 
 //Processa parâmetros da URL
 server.use(express.urlencoded({ extended: true }));
+
+//Cookies
+server.use(cookieParser());
 
 //Variável global para lista de livros
 var listaLivros = [];
@@ -15,7 +32,11 @@ var listaLeitores = [];
 
 
 //Página Principal
-server.get('/', (requisicao, resposta) => {
+server.get('/', estaAutenticado, (requisicao, resposta) => {
+
+    //Último acesso do usuário na tela de menu do sistema
+    const ultimoAcesso = requisicao.cookies?.ultimoAcesso || "Nunca acessou.";
+
     resposta.write(`
         <html lang="pt-br">
         <head>
@@ -54,9 +75,9 @@ server.get('/', (requisicao, resposta) => {
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="/login">Login</a></li>
-                                
-                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item">Último Acesso: ${ultimoAcesso}</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -71,7 +92,7 @@ server.get('/', (requisicao, resposta) => {
 });
 
 //Página de Cadastro de Livros
-server.get('/cadastroLivros', (requisicao, resposta) => {
+server.get('/cadastroLivros', estaAutenticado, (requisicao, resposta) => {
       resposta.write(`
          <html lang="pt-br">
         <head>
@@ -118,7 +139,7 @@ server.get('/cadastroLivros', (requisicao, resposta) => {
 });
 
 //Processamento do Cadastro de Livros
-server.post('/cadastroLivros', (requisicao, resposta) => {
+server.post('/cadastroLivros', estaAutenticado, (requisicao, resposta) => {
     const tituloLivro = requisicao.body.tituloLivro;
     const autor = requisicao.body.autor;
     const isbn = requisicao.body.isbn;
@@ -199,7 +220,7 @@ server.post('/cadastroLivros', (requisicao, resposta) => {
 });
 
 //Página da Lista de Livros
-server.get('/listaLivros', (requisicao, resposta) => {
+server.get('/listaLivros', estaAutenticado, (requisicao, resposta) => {
     resposta.write(`
    <html lang="pt-br">
         <head>
@@ -247,7 +268,7 @@ server.get('/listaLivros', (requisicao, resposta) => {
 });
 
 //Página de Cadastro de Leitores
-server.get('/cadastroLeitores', (requisicao, resposta) => {
+server.get('/cadastroLeitores', estaAutenticado, (requisicao, resposta) => {
     resposta.write(`
          <html lang="pt-br">
         <head>
@@ -322,7 +343,7 @@ server.get('/cadastroLeitores', (requisicao, resposta) => {
 });
 
 //Processamento do Cadastro de Leitores
-server.post('/cadastroLeitores', (requisicao, resposta) => {
+server.post('/cadastroLeitores', estaAutenticado, (requisicao, resposta) => {
     const nomeLeitor = requisicao.body.nomeLeitor;
     const cpf = requisicao.body.cpf;
     const telefone = requisicao.body.telefone;
@@ -405,14 +426,26 @@ server.post('/cadastroLeitores', (requisicao, resposta) => {
                         if (!tituloLivro) {
                             html += `
                             <option value ="" selected> Selecione um livro </option>`;
+                         
                         }
 
                         else {
-                            for (let i = 0; i < listaLivros.length; i++) {
-                            const livro = listaLivros[i];
                             html += `
-                                <option value="${livro.tituloLivro}" selected>${livro.tituloLivro}</option>
-                            }`;
+                            <option value=""> Selecione um livro </option>`;
+                          
+                        }
+
+                        for (let i = 0; i < listaLivros.length; i++) {
+                            const livro = listaLivros[i];
+
+                            if (livro.tituloLivro === tituloLivro) {
+                                html += `
+                                <option value="${livro.tituloLivro}" selected>${livro.tituloLivro}</option>`;
+                            }
+
+                            else {
+                                html += `
+                                <option value="${livro.tituloLivro}">${livro.tituloLivro}</option>`;
                             }
                         }
 
@@ -458,7 +491,7 @@ server.post('/cadastroLeitores', (requisicao, resposta) => {
 });
 
 //Página da Lista de Leitores
-server.get('/listaLeitores', (requisicao, resposta) => {
+server.get('/listaLeitores', estaAutenticado, (requisicao, resposta) => {
     resposta.write(`
        <html lang="pt-br">
         <head>
@@ -545,7 +578,6 @@ server.get('/login', (requisicao, resposta) => {
                     </div>
 
                     <button type="submit" class="btn btn-success w-100 fw-bold mb-2"> Entrar </button>
-                    <a href="/" class="btn btn-primary w-100">Página Inicial</a>
                     </form>
                 </div>
             </body>
@@ -554,10 +586,79 @@ server.get('/login', (requisicao, resposta) => {
     resposta.end();
 });
 
+//Processamento dos dados do Login
+server.post('/login', (requisicao, resposta) => {
+    const email = requisicao.body.email;
+    const senha = requisicao.body.senha;
+
+    if (email == "admin@teste.com.br" && senha == "admin") {
+        requisicao.session.logado = true;
+
+        const dataUltimoAcesso = new Date();
+        resposta.cookie("ultimoAcesso", dataUltimoAcesso.toLocaleString(), {maxAge: 1000 * 60 * 60 * 24 * 30, httpOnly: true});
+
+        resposta.redirect('/');
+    }
+
+    else {
+        resposta.write(`
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+                <link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
+                <title>Página de Login</title>
+                <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+            </head>
+
+            <body class="p-3 m-0 border-0 bd-example m-0 border-0">
+               <div class="container w-50">
+                    <form action="/login" method="POST">
+                    <div class="row">
+                        <h1 class="text-center fw-bold">LOGIN</h1>
+                        <h6 class="display-6 text-center">Por favor realize o Login para acessar a aplicação.</h6>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="email" class="form-control" id="email" aria-describedby="emailHelp" name="email">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="senha" class="form-label">Senha:</label>
+                        <input type="password" class="form-control" id="senha" name="senha">
+                    </div>
+
+                    <span>
+                        <p class="text-danger">Email ou senha inválidos. </p>
+                    </span>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold mb-2"> Entrar </button>
+                    </form>
+                </div>
+            </body>
+            </html> `);
+        resposta.end();
+    }
+});
+
 //Página de Logout
 server.get('/logout', (requisicao, resposta) => {
-    resposta.send("Logout Ok.");
+    requisicao.session.destroy();
+    resposta.redirect("/login");
 });
+
+//Middleware
+function estaAutenticado (requisicao, resposta, proximo) {
+    if (requisicao.session?.logado) {
+        proximo();
+    }
+
+    else {
+        resposta.redirect("/login");
+    }
+};
 
 //Confere se o servidor está escutando
 const port = process.env.PORT || 3000;
